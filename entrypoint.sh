@@ -23,28 +23,30 @@ echo "PASSWORD: ****"
 echo "============================================"
 
 # ── 生成 Xray 配置 ────────────────────────────────────
-# 转义 sed 替换字符串中的特殊字符: \ & 以及换行符
 escaped_password=$(printf '%s' "$PASSWORD" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g')
 escaped_ws=$(printf '%s' "$WS_PATH" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g')
 
-# 使用 # 作为分隔符，避免路径中的 / 需要转义
 sed \
     -e "s#__PASSWORD__#${escaped_password}#g" \
     -e "s#__WS_PATH__#${escaped_ws}#g" \
     /etc/xray/config.template.json > /usr/local/etc/xray/config.json
 
-echo "[xray] config generated at /usr/local/etc/xray/config.json"
+echo "[xray] config generated"
 
 # ── 生成 Nginx 配置 ────────────────────────────────────
-# 使用 envsubst，仅替换 ${PORT} ${WS_PATH}，保留 nginx 原生变量
+# 移除 Debian 默认 site 配置，避免端口冲突
+rm -f /etc/nginx/sites-enabled/default
+
 export PORT WS_PATH
 envsubst '${PORT} ${WS_PATH}' \
     < /etc/nginx/nginx.template.conf \
-    > /etc/nginx/http.d/default.conf
+    > /etc/nginx/conf.d/default.conf
 
-echo "[nginx] config generated at /etc/nginx/http.d/default.conf"
+echo "[nginx] config generated"
 
 # ── 启动 Xray（后台） ──────────────────────────────────
+# Xray 需要 geoip.dat / geosite.dat 在同目录，设置资源路径
+export XRAY_LOCATION_ASSET=/usr/local/xray
 /usr/local/xray/xray -config /usr/local/etc/xray/config.json &
 XRAY_PID=$!
 echo "[xray] started (pid=$XRAY_PID)"
