@@ -1,7 +1,5 @@
 FROM debian:stable-slim
 
-ARG XRAY_VERSION=1.8.23
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     gettext-base \
@@ -11,12 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /usr/local/xray && \
-    curl -sSL https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-64.zip -o /tmp/xray.zip && \
+    curl -fsSLo /tmp/xray.zip \
+        https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip /tmp/xray.zip -d /usr/local/xray && \
     rm /tmp/xray.zip && \
     chmod +x /usr/local/xray/xray
 
-RUN mkdir -p /run/nginx /usr/local/etc/xray /var/log/xray /var/log/nginx
+RUN mkdir -p /run/nginx /usr/local/etc/xray /var/log/xray /var/log/nginx && \
+    rm -f /etc/nginx/sites-enabled/default
 
 COPY entrypoint.sh /entrypoint.sh
 COPY config.template.json /etc/xray/config.template.json

@@ -31,25 +31,38 @@ sed \
     -e "s#__WS_PATH__#${escaped_ws}#g" \
     /etc/xray/config.template.json > /usr/local/etc/xray/config.json
 
-echo "[xray] config generated"
+echo "[xray] config written"
 
 # ── 生成 Nginx 配置 ────────────────────────────────────
-# 移除 Debian 默认 site 配置，避免端口冲突
-rm -f /etc/nginx/sites-enabled/default
-
 export PORT WS_PATH
 envsubst '${PORT} ${WS_PATH}' \
     < /etc/nginx/nginx.template.conf \
     > /etc/nginx/conf.d/default.conf
 
-echo "[nginx] config generated"
+echo "[nginx] config written"
+
+# ── 测试 nginx 配置语法 ────────────────────────────────
+nginx -t
 
 # ── 启动 Xray（后台） ──────────────────────────────────
-# Xray 需要 geoip.dat / geosite.dat 在同目录，设置资源路径
 export XRAY_LOCATION_ASSET=/usr/local/xray
+echo "[xray] starting..."
 /usr/local/xray/xray -config /usr/local/etc/xray/config.json &
 XRAY_PID=$!
-echo "[xray] started (pid=$XRAY_PID)"
+
+# 等待 Xray 就绪（最多 5 秒）
+for i in $(seq 1 10); do
+    if kill -0 "$XRAY_PID" 2>/dev/null; then
+        echo "[xray] started (pid=$XRAY_PID)"
+        break
+    fi
+    sleep 0.5
+done
+
+if ! kill -0 "$XRAY_PID" 2>/dev/null; then
+    echo "ERROR: xray failed to start"
+    exit 1
+fi
 
 # ── 启动 Nginx（前台，作为主进程） ────────────────────
 echo "[nginx] starting in foreground..."
