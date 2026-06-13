@@ -28,31 +28,30 @@ echo "  DOMAIN:    $DOMAIN"
 echo "  PASSWORD:  ****"
 echo "============================================"
 
-# ── sed 转义函数 ───────────────────────────────────────
-# 转义: \ & （使用 # 作分隔符，无需转义 /）
-escape_sed() {
-    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g'
-}
-
-ESC_PASSWORD=$(escape_sed "$PASSWORD")
-ESC_WS_PATH=$(escape_sed "$WS_PATH")
-ESC_PORT=$(escape_sed "$PORT")
+# ── 导出环境变量供 envsubst 使用 ──────────────────────
+export PORT PASSWORD WS_PATH DOMAIN
 
 # ── 生成 Xray 配置 ────────────────────────────────────
 echo "[xray] generating config..."
-sed \
-    -e "s#__PASSWORD__#${ESC_PASSWORD}#g" \
-    -e "s#__WS_PATH__#${ESC_WS_PATH}#g" \
-    /etc/xray/config.template.json > /usr/local/etc/xray/config.json
-echo "[xray] config written to /usr/local/etc/xray/config.json"
+envsubst < /etc/xray/config.template.json > /etc/xray/config.json
+echo "Config generated successfully."
 
 # ── 生成 Nginx 配置 ────────────────────────────────────
+# 仅替换 PORT / WS_PATH，保留 nginx 原生变量（$host, $http_upgrade 等）
 echo "[nginx] generating config..."
-sed \
-    -e "s#__PORT__#${ESC_PORT}#g" \
-    -e "s#__WS_PATH__#${ESC_WS_PATH}#g" \
-    /etc/nginx/nginx.template.conf > /etc/nginx/conf.d/default.conf
-echo "[nginx] config written to /etc/nginx/conf.d/default.conf"
+envsubst '${PORT} ${WS_PATH}' \
+    < /etc/nginx/nginx.template.conf \
+    > /etc/nginx/conf.d/default.conf
+echo "Config generated successfully."
+
+# ── 验证 Xray 配置合法性 ───────────────────────────────
+echo "[xray] testing config..."
+if ! /usr/local/xray/xray run -test -config /etc/xray/config.json 2>&1; then
+    echo "ERROR: xray config is invalid"
+    cat /etc/xray/config.json
+    exit 1
+fi
+echo "[xray] config OK"
 
 # ── 验证 Nginx 配置语法 ────────────────────────────────
 echo "[nginx] testing config..."
@@ -66,7 +65,7 @@ echo "[nginx] config OK"
 # ── 启动 Xray ──────────────────────────────────────────
 export XRAY_LOCATION_ASSET=/usr/local/xray
 echo "[xray] Starting Xray..."
-/usr/local/xray/xray -config /usr/local/etc/xray/config.json > /var/log/xray/stdout.log 2>&1 &
+/usr/local/xray/xray run -config /etc/xray/config.json > /var/log/xray/stdout.log 2>&1 &
 XRAY_PID=$!
 
 # 等待 Xray 进程就绪

@@ -2,6 +2,7 @@ FROM debian:stable-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
+    gettext-base \
     curl \
     unzip \
     ca-certificates \
@@ -14,7 +15,7 @@ RUN mkdir -p /usr/local/xray && \
     rm /tmp/xray.zip && \
     chmod +x /usr/local/xray/xray
 
-RUN mkdir -p /run/nginx /usr/local/etc/xray /var/log/xray /var/log/nginx && \
+RUN mkdir -p /run/nginx /etc/xray /var/log/xray /var/log/nginx && \
     rm -f /etc/nginx/sites-enabled/default
 
 COPY entrypoint.sh /entrypoint.sh

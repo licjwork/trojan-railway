@@ -12,14 +12,14 @@
       "settings": {
         "clients": [
           {
-            "password": "__PASSWORD__"
+            "password": "${PASSWORD}"
           }
         ]
       },
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "__WS_PATH__"
+          "path": "${WS_PATH}"
         }
       }
     }
