@@ -2,7 +2,6 @@ FROM debian:stable-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
-    gettext-base \
     curl \
     unzip \
     ca-certificates \
@@ -10,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN mkdir -p /usr/local/xray && \
     curl -fsSLo /tmp/xray.zip \
-        https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+        https://github.com/XTLS/Xray-core/releases/download/v1.8.23/Xray-linux-64.zip && \
     unzip /tmp/xray.zip -d /usr/local/xray && \
     rm /tmp/xray.zip && \
     chmod +x /usr/local/xray/xray
@@ -24,4 +23,4 @@ COPY nginx.template.conf /etc/nginx/nginx.template.conf
 
 RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
