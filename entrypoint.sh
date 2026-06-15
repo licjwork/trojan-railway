@@ -84,12 +84,32 @@ if ! kill -0 "$XRAY_PID" 2>/dev/null; then
     exit 1
 fi
 
+# ── 组装公网域名（优先自定义 DOMAIN，否则 Railway 自动分配） ──
+PUBLIC_DOMAIN="${DOMAIN:-${RAILWAY_PUBLIC_DOMAIN:-}}"
+if [ -z "$PUBLIC_DOMAIN" ]; then
+    PUBLIC_DOMAIN="<your-domain>"
+fi
+
 # ── 启动 Nginx（前台） ─────────────────────────────────
 echo "[nginx] Starting Nginx on 0.0.0.0:$PORT..."
-echo "[nginx] Health check: GET / → 200 OK"
-echo "[nginx] WebSocket:   $WS_PATH → proxy to 127.0.0.1:10000"
+echo ""
 echo "============================================"
-echo "  All services started. Ready."
+echo "  Trojan Railway — Ready"
+echo "============================================"
+echo "  Health:   https://${PUBLIC_DOMAIN}/"
+echo "  Trojan:   trojan://${PASSWORD}@${PUBLIC_DOMAIN}:443?security=tls&type=ws&path=${WS_PATH}&sni=${PUBLIC_DOMAIN}#Trojan-Railway"
+echo ""
+echo "  ── Client config ──"
+echo "  Server:        ${PUBLIC_DOMAIN}"
+echo "  Port:          443"
+echo "  Password:      ${PASSWORD}"
+echo "  Network:       ws"
+echo "  WS Path:       ${WS_PATH}"
+echo "  TLS:           on"
+echo "  SNI:           ${PUBLIC_DOMAIN}"
+echo ""
+echo "  ── Import ──"
+echo "  trojan://${PASSWORD}@${PUBLIC_DOMAIN}:443?security=tls&type=ws&path=${WS_PATH}&sni=${PUBLIC_DOMAIN}#Trojan-Railway"
 echo "============================================"
 
 exec nginx -g "daemon off;"

@@ -24,6 +24,8 @@ Go 官方 Release 二进制默认链接 glibc。Alpine 使用 musl libc，两者
    - Debian: `/etc/nginx/conf.d/default.conf`
 4. Debian nginx 需要清理默认站点：`rm -f /etc/nginx/sites-enabled/default`
 5. `gettext`（Alpine）→ `gettext-base`（Debian），两者都提供 `envsubst`
+6. **ENTRYPOINT 显式指定 shell**：使用 `ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]`，避免 `ENTRYPOINT ["/entrypoint.sh"]` 潜在的 shebang 或执行权限问题
+7. **Xray 启动前验证配置**：先执行 `xray run -test -config /path/to/config.json`，失败时打印配置内容便于排查
 
 ## 示例 Dockerfile 片段
 
